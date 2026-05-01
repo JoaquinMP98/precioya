@@ -14,11 +14,15 @@ logger = logging.getLogger(__name__)
 
 _PW_TIMEOUT_MS = int(settings.scraper_timeout * 1000)
 
-SCRAPERS: list[BaseScraper] = [
-    MercadonaScraper(timeout=settings.scraper_timeout),
-    LidlScraper(headless=settings.playwright_headless, timeout=_PW_TIMEOUT_MS),
-    AlcampoScraper(headless=settings.playwright_headless, timeout=_PW_TIMEOUT_MS),
-]
+SCRAPERS: list[BaseScraper] = [MercadonaScraper(timeout=settings.scraper_timeout)]
+
+if settings.playwright_enabled:
+    SCRAPERS += [
+        LidlScraper(headless=settings.playwright_headless, timeout=_PW_TIMEOUT_MS),
+        AlcampoScraper(headless=settings.playwright_headless, timeout=_PW_TIMEOUT_MS),
+    ]
+else:
+    logger.info("Playwright disabled (PLAYWRIGHT_ENABLED=false) — running Mercadona only")
 
 
 async def _run_scraper(

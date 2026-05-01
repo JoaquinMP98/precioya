@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     admin_api_key: str = "changeme"
     log_level: str = "INFO"
     playwright_headless: bool = True
+    playwright_enabled: bool = True
 
     scraper_timeout: float = 10.0
     cache_ttl_hours: int = 24
