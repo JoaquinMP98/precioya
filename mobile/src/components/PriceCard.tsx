@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/colors';
 import { formatPrice, supermarketLabel } from '@/utils/formatPrice';
@@ -17,6 +17,23 @@ function SupermarketDot({ slug }: { slug: string }) {
   return <View style={[styles.dot, { backgroundColor: dotColor }]} />;
 }
 
+function ProductImage({ uri }: { uri: string | null }) {
+  if (uri) {
+    return (
+      <Image
+        source={{ uri }}
+        style={styles.thumbnail}
+        resizeMode="contain"
+      />
+    );
+  }
+  return (
+    <View style={styles.thumbnailPlaceholder}>
+      <Ionicons name="bag-outline" size={26} color={colors.textMuted} />
+    </View>
+  );
+}
+
 export function PriceCard({ result, isCheapest }: Props) {
   return (
     <View style={[styles.card, isCheapest && styles.cheapestCard]}>
@@ -28,7 +45,9 @@ export function PriceCard({ result, isCheapest }: Props) {
       )}
 
       <View style={styles.row}>
-        <View style={styles.left}>
+        <ProductImage uri={result.image_url} />
+
+        <View style={styles.middle}>
           <View style={styles.supermarketRow}>
             <SupermarketDot slug={result.supermarket} />
             <Text style={styles.supermarket}>
@@ -88,10 +107,27 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: 12,
   },
-  left: {
+  thumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: colors.background,
+    flexShrink: 0,
+  },
+  thumbnailPlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  middle: {
     flex: 1,
   },
   supermarketRow: {
