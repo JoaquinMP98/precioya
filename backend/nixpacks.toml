@@ -26,7 +26,7 @@ nixPkgs = [
 ]
 
 [phases.install]
-cmds = ["pip install -r requirements.txt", "playwright install chromium"]
+cmds = ["pip3 install -r requirements.txt", "playwright install chromium"]
 
 [start]
 cmd = "uvicorn main:app --host 0.0.0.0 --port $PORT"
