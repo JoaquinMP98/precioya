@@ -207,7 +207,17 @@ interface EmptyStateProps {
 }
 
 function EmptyState({ query, loading, error, hasData }: EmptyStateProps) {
-  if (loading) return null;
+  if (loading) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyIcon}>🔍</Text>
+        <Text style={styles.emptyTitle}>Buscando en supermercados...</Text>
+        <Text style={styles.emptySubtitle}>
+          Esto puede tardar unos segundos.
+        </Text>
+      </View>
+    );
+  }
 
   if (error) {
     return (

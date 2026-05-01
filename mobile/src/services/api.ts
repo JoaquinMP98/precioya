@@ -7,7 +7,7 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 const client = axios.create({
   baseURL: `${BASE_URL}/api/v1`,
-  timeout: 15_000,
+  timeout: 60_000,
 });
 
 export async function compareProducts(query: string): Promise<CompareResponse> {
