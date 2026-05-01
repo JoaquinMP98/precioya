@@ -10,9 +10,14 @@ class MarketResult(BaseModel):
     image_url: str | None = None
 
 
+class SupermarketGroup(BaseModel):
+    supermarket: str
+    products: list[MarketResult]
+
+
 class CompareResponse(BaseModel):
     query: str
     cheapest: MarketResult | None
-    by_supermarket: list[MarketResult]
+    by_supermarket: list[SupermarketGroup]
     from_cache: bool = False
     warnings: list[str] = Field(default_factory=list)

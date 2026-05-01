@@ -1,8 +1,8 @@
 import React, { useCallback, useRef, useState } from 'react';
 import {
-  FlatList,
   KeyboardAvoidingView,
   Platform,
+  SectionList,
   StyleSheet,
   Text,
   View,
@@ -14,9 +14,15 @@ import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { PriceCard } from '@/components/PriceCard';
 import { useCompare } from '@/hooks/useCompare';
 import { colors } from '@/constants/colors';
-import type { MarketResult } from '@/types/compare';
+import { supermarketLabel } from '@/utils/formatPrice';
+import type { MarketResult, SupermarketGroup } from '@/types/compare';
 
 const DEBOUNCE_MS = 500;
+
+interface Section {
+  supermarket: string;
+  data: MarketResult[];
+}
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
@@ -55,11 +61,40 @@ export default function SearchScreen() {
 
   const cheapestUrl = data?.cheapest?.url ?? null;
 
+  const sections: Section[] = (data?.by_supermarket ?? []).map(
+    (group: SupermarketGroup) => ({
+      supermarket: group.supermarket,
+      data: group.products,
+    }),
+  );
+
+  const totalProducts = sections.reduce((sum, s) => sum + s.data.length, 0);
+
   const renderItem = useCallback(
     ({ item }: { item: MarketResult }) => (
       <PriceCard result={item} isCheapest={item.url === cheapestUrl} />
     ),
     [cheapestUrl],
+  );
+
+  const renderSectionHeader = useCallback(
+    ({ section }: { section: Section }) => (
+      <View style={styles.sectionHeader}>
+        <View
+          style={[
+            styles.sectionDot,
+            {
+              backgroundColor:
+                colors.supermarket[section.supermarket] ?? colors.primary,
+            },
+          ]}
+        />
+        <Text style={styles.sectionTitle}>
+          {supermarketLabel(section.supermarket)}
+        </Text>
+      </View>
+    ),
+    [],
   );
 
   const keyExtractor = useCallback(
@@ -95,17 +130,20 @@ export default function SearchScreen() {
         />
 
         {/* Results */}
-        <FlatList
-          data={data?.by_supermarket ?? []}
+        <SectionList
+          sections={sections}
           renderItem={renderItem}
+          renderSectionHeader={renderSectionHeader}
           keyExtractor={keyExtractor}
           contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="handled"
+          stickySectionHeadersEnabled={false}
           ListHeaderComponent={
-            data && data.by_supermarket.length > 0 ? (
+            data && sections.length > 0 ? (
               <ResultHeader
                 query={data.query}
-                count={data.by_supermarket.length}
+                supermarketCount={sections.length}
+                productCount={totalProducts}
                 fromCache={data.from_cache}
                 warnings={data.warnings}
               />
@@ -129,16 +167,24 @@ export default function SearchScreen() {
 
 interface ResultHeaderProps {
   query: string;
-  count: number;
+  supermarketCount: number;
+  productCount: number;
   fromCache: boolean;
   warnings: string[];
 }
 
-function ResultHeader({ query, count, fromCache, warnings }: ResultHeaderProps) {
+function ResultHeader({
+  query,
+  supermarketCount,
+  productCount,
+  fromCache,
+  warnings,
+}: ResultHeaderProps) {
   return (
     <View style={styles.resultHeader}>
       <Text style={styles.resultTitle}>
-        {count} supermercado{count !== 1 ? 's' : ''} para{' '}
+        {productCount} producto{productCount !== 1 ? 's' : ''} en{' '}
+        {supermarketCount} supermercado{supermarketCount !== 1 ? 's' : ''} para{' '}
         <Text style={styles.resultQuery}>"{query}"</Text>
       </Text>
       {fromCache && (
@@ -234,6 +280,26 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     flexGrow: 1,
     backgroundColor: colors.background,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 6,
+  },
+  sectionDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   resultHeader: {
     paddingHorizontal: 16,
