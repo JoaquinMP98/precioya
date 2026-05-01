@@ -11,6 +11,7 @@ class Settings(BaseSettings):
 
     scraper_timeout: float = 10.0
     cache_ttl_hours: int = 24
+    port: int = 8000
 
 
 settings = Settings()

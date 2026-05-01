@@ -30,3 +30,8 @@ app.include_router(compare_router, prefix="/api/v1", tags=["compare"])
 @app.get("/health")
 async def health() -> dict:
     return {"status": "ok"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=settings.port, reload=False)
