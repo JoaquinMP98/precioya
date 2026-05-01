@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Playwright browsers
+playwright-browsers/
+.playwright/
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+
+# iOS / Android native builds
+mobile/ios/
+mobile/android/
+*.ipa
+*.apk
+*.aab
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
