@@ -76,6 +76,54 @@ async def get_cached_results(db: AsyncSession, query: str) -> list[ScrapedProduc
     return out
 
 
+async def get_stale_results_for_supermarkets(
+    db: AsyncSession,
+    query: str,
+    supermarkets: list[str],
+) -> list[ScrapedProduct]:
+    """Return the most recent cached results for the given supermarkets, ignoring TTL."""
+    ids_result = await db.execute(
+        select(SearchCache.product_id)
+        .join(Product, Product.id == SearchCache.product_id)
+        .where(SearchCache.query == _normalize(query))
+        .where(Product.supermarket.in_(supermarkets))
+        .distinct()
+    )
+    product_ids = ids_result.scalars().all()
+    if not product_ids:
+        return []
+
+    products_result = await db.execute(
+        select(Product).where(Product.id.in_(product_ids))
+    )
+    products = products_result.scalars().all()
+
+    out: list[ScrapedProduct] = []
+    for product in products:
+        price_result = await db.execute(
+            select(Price)
+            .where(Price.product_id == product.id)
+            .order_by(Price.scraped_at.desc())
+            .limit(1)
+        )
+        price = price_result.scalars().first()
+        if price is None:
+            continue
+        out.append(
+            ScrapedProduct(
+                name=product.name,
+                price=price.price,
+                price_per_unit=price.price_per_unit,
+                image_url=product.image_url,
+                url=product.url,
+                supermarket=product.supermarket,
+                brand=product.brand,
+                category=product.category,
+            )
+        )
+    return out
+
+
 async def save_results(
     db: AsyncSession,
     query: str,

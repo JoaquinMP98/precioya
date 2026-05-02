@@ -3,7 +3,7 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.cache import get_cached_results, is_query_fresh, save_results
+from core.cache import get_cached_results, get_stale_results_for_supermarkets, is_query_fresh, save_results
 from core.config import settings
 from scrapers.alcampo.scraper import AlcampoScraper
 from scrapers.base import BaseScraper, ScrapedProduct
@@ -58,18 +58,32 @@ async def search_with_cache(
     Return (products, from_cache, warnings).
     Serves from DB cache when the query was scraped within TTL; fans out to
     scrapers otherwise and persists the fresh results.
+    When Playwright is disabled, supplements missing supermarkets with their
+    most recently stored results regardless of TTL.
     """
+    warnings: list[str] = []
+
     if await is_query_fresh(db, query):
         logger.debug("Cache hit for %r", query)
-        cached = await get_cached_results(db, query)
-        return cached, True, []
+        products = await get_cached_results(db, query)
+        from_cache = True
+    else:
+        logger.debug("Cache miss for %r — fanning out to scrapers", query)
+        batches = await asyncio.gather(*[_run_scraper(s, query, warnings) for s in SCRAPERS])
+        products = [p for batch in batches for p in batch]
+        if products:
+            await save_results(db, query, products)
+        from_cache = False
 
-    logger.debug("Cache miss for %r — fanning out to scrapers", query)
-    warnings: list[str] = []
-    batches = await asyncio.gather(*[_run_scraper(s, query, warnings) for s in SCRAPERS])
-    products = [p for batch in batches for p in batch]
+    if not settings.playwright_enabled:
+        covered = {p.supermarket for p in products}
+        missing = [s for s in ("lidl", "alcampo") if s not in covered]
+        if missing:
+            stale = await get_stale_results_for_supermarkets(db, query, missing)
+            if stale:
+                products = products + stale
+                stale_supermarkets = sorted({p.supermarket for p in stale})
+                names = " y ".join(s.capitalize() for s in stale_supermarkets)
+                warnings.append(f"{names}: precios anteriores (Playwright desactivado)")
 
-    if products:
-        await save_results(db, query, products)
-
-    return products, False, warnings
+    return products, from_cache, warnings

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/colors';
@@ -18,12 +18,14 @@ function SupermarketDot({ slug }: { slug: string }) {
 }
 
 function ProductImage({ uri }: { uri: string | null }) {
-  if (uri) {
+  const [errored, setErrored] = useState(false);
+  if (uri && !errored) {
     return (
       <Image
         source={{ uri }}
         style={styles.thumbnail}
         resizeMode="contain"
+        onError={() => setErrored(true)}
       />
     );
   }
