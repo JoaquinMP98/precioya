@@ -8,6 +8,7 @@ class MarketResult(BaseModel):
     price_per_unit: str | None = None
     url: str
     image_url: str | None = None
+    best_unit_price: bool = False
 
 
 class SupermarketGroup(BaseModel):

@@ -5,6 +5,7 @@ export interface MarketResult {
   price_per_unit: string | null;
   url: string;
   image_url: string | null;
+  best_unit_price: boolean;
 }
 
 export interface SupermarketGroup {

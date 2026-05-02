@@ -12,6 +12,13 @@ interface Props {
 
 const SUPERMARKET_COLORS: Record<string, string> = colors.supermarket;
 
+// "0.57 €/L" → "Mejor €/L" | "1.25 €/kg" → "Mejor €/kg" | null if unit unrecognised
+function bestUnitLabel(pricePerUnit: string | null): string | null {
+  if (!pricePerUnit) return null;
+  const m = pricePerUnit.match(/€\s*\/\s*(L|kg|ml|g)\b/i);
+  return m ? `Mejor €/${m[1]}` : null;
+}
+
 function SupermarketDot({ slug }: { slug: string }) {
   const dotColor = SUPERMARKET_COLORS[slug] ?? colors.primary;
   return <View style={[styles.dot, { backgroundColor: dotColor }]} />;
@@ -37,12 +44,22 @@ function ProductImage({ uri }: { uri: string | null }) {
 }
 
 export function PriceCard({ result, isCheapest }: Props) {
+  const unitLabel = result.best_unit_price
+    ? bestUnitLabel(result.price_per_unit)
+    : null;
+
   return (
     <View style={[styles.card, isCheapest && styles.cheapestCard]}>
       {isCheapest && (
         <View style={styles.cheapestBadge}>
           <Ionicons name="trophy" size={11} color={colors.cheapest} />
           <Text style={styles.cheapestBadgeText}>Más barato</Text>
+        </View>
+      )}
+      {unitLabel != null && (
+        <View style={styles.bestUnitBadge}>
+          <Ionicons name="trending-down" size={11} color={colors.primary} />
+          <Text style={styles.bestUnitBadgeText}>{unitLabel}</Text>
         </View>
       )}
 
@@ -172,5 +189,18 @@ const styles = StyleSheet.create({
   },
   cheapestPrice: {
     color: colors.cheapest,
+  },
+  bestUnitBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 8,
+  },
+  bestUnitBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });
