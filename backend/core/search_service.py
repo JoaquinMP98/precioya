@@ -6,7 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.cache import get_cached_results, get_stale_results_for_supermarkets, is_query_fresh, save_results
 from core.config import settings
 from scrapers.alcampo.scraper import AlcampoScraper
+from scrapers.aldi.scraper import AldiScraper
 from scrapers.base import BaseScraper, ScrapedProduct
+from scrapers.carrefour.scraper import CarrefourScraper
+from scrapers.dia.scraper import DiaScraper
 from scrapers.lidl.scraper import LidlScraper
 from scrapers.mercadona.scraper import MercadonaScraper
 
@@ -20,6 +23,9 @@ if settings.playwright_enabled:
     SCRAPERS += [
         LidlScraper(headless=settings.playwright_headless, timeout=_PW_TIMEOUT_MS),
         AlcampoScraper(headless=settings.playwright_headless, timeout=_PW_TIMEOUT_MS),
+        CarrefourScraper(headless=settings.playwright_headless, timeout=_PW_TIMEOUT_MS),
+        DiaScraper(headless=settings.playwright_headless, timeout=_PW_TIMEOUT_MS),
+        AldiScraper(headless=settings.playwright_headless, timeout=_PW_TIMEOUT_MS),
     ]
 else:
     logger.info("Playwright disabled (PLAYWRIGHT_ENABLED=false) — running Mercadona only")
@@ -77,7 +83,7 @@ async def search_with_cache(
 
     if not settings.playwright_enabled:
         covered = {p.supermarket for p in products}
-        missing = [s for s in ("lidl", "alcampo") if s not in covered]
+        missing = [s for s in ("lidl", "alcampo", "carrefour", "dia", "aldi") if s not in covered]
         if missing:
             stale = await get_stale_results_for_supermarkets(db, query, missing)
             if stale:

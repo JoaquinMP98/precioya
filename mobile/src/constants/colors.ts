@@ -15,5 +15,8 @@ export const colors = {
     lidl: '#0050AA',
     alcampo: '#E2001A',
     supercor: '#006FC4',
+    carrefour: '#005CB9',
+    dia: '#E4001C',
+    aldi: '#003F8A',
   },
 } as const;
