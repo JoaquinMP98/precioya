@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/colors';
 import { formatPrice, supermarketLabel } from '@/utils/formatPrice';
@@ -8,6 +8,7 @@ import type { MarketResult } from '@/types/compare';
 interface Props {
   result: MarketResult;
   isCheapest: boolean;
+  onAdd?: () => void;
 }
 
 const SUPERMARKET_COLORS: Record<string, string> = colors.supermarket;
@@ -43,7 +44,7 @@ function ProductImage({ uri }: { uri: string | null }) {
   );
 }
 
-export function PriceCard({ result, isCheapest }: Props) {
+export function PriceCard({ result, isCheapest, onAdd }: Props) {
   const unitLabel = result.best_unit_price
     ? bestUnitLabel(result.price_per_unit)
     : null;
@@ -85,6 +86,11 @@ export function PriceCard({ result, isCheapest }: Props) {
           <Text style={[styles.price, isCheapest && styles.cheapestPrice]}>
             {formatPrice(result.price)}
           </Text>
+          {onAdd && (
+            <TouchableOpacity onPress={onAdd} style={styles.addBtn} hitSlop={8}>
+              <Ionicons name="add-circle" size={24} color={colors.primary} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
@@ -181,6 +187,10 @@ const styles = StyleSheet.create({
   priceBox: {
     alignItems: 'flex-end',
     flexShrink: 0,
+    gap: 6,
+  },
+  addBtn: {
+    padding: 2,
   },
   price: {
     fontSize: 22,

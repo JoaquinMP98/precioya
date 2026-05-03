@@ -15,6 +15,9 @@ import { PriceCard } from '@/components/PriceCard';
 import { useCompare } from '@/hooks/useCompare';
 import { colors } from '@/constants/colors';
 import { supermarketLabel } from '@/utils/formatPrice';
+
+const SUPERMARKET_COLORS: Record<string, string> = colors.supermarket;
+import { useShoppingList } from '@/store/shoppingList';
 import type { MarketResult, SupermarketGroup } from '@/types/compare';
 
 const DEBOUNCE_MS = 500;
@@ -28,6 +31,7 @@ export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [scannerVisible, setScannerVisible] = useState(false);
   const { data, loading, error, search, reset } = useCompare();
+  const { addItem } = useShoppingList();
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleChangeText = useCallback(
@@ -72,9 +76,13 @@ export default function SearchScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: MarketResult }) => (
-      <PriceCard result={item} isCheapest={item.url === cheapestUrl} />
+      <PriceCard
+        result={item}
+        isCheapest={item.url === cheapestUrl}
+        onAdd={() => addItem(item)}
+      />
     ),
-    [cheapestUrl],
+    [cheapestUrl, addItem],
   );
 
   const renderSectionHeader = useCallback(
@@ -85,7 +93,7 @@ export default function SearchScreen() {
             styles.sectionDot,
             {
               backgroundColor:
-                colors.supermarket[section.supermarket] ?? colors.primary,
+                SUPERMARKET_COLORS[section.supermarket] ?? colors.primary,
             },
           ]}
         />
