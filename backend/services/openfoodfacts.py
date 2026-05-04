@@ -91,5 +91,5 @@ async def get_nutriscore_by_name(
                 return grade, _nova(hit.get("nova_groups"))
         return None, None
     except Exception as exc:  # noqa: BLE001
-        logger.debug("OFF name search failed for %r: %s", name, exc)
+        logger.warning("OFF name search failed for %r: %s", name, exc)
         return None, None

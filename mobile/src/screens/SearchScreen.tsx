@@ -1,8 +1,8 @@
 import React, { useCallback, useRef, useState } from 'react';
 import {
+  FlatList,
   KeyboardAvoidingView,
   Platform,
-  SectionList,
   StyleSheet,
   Text,
   View,
@@ -14,18 +14,10 @@ import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { PriceCard } from '@/components/PriceCard';
 import { useCompare } from '@/hooks/useCompare';
 import { colors } from '@/constants/colors';
-import { supermarketLabel } from '@/utils/formatPrice';
-
-const SUPERMARKET_COLORS: Record<string, string> = colors.supermarket;
 import { useShoppingList } from '@/store/shoppingList';
-import type { MarketResult, SupermarketGroup } from '@/types/compare';
+import type { MarketResult } from '@/types/compare';
 
 const DEBOUNCE_MS = 500;
-
-interface Section {
-  supermarket: string;
-  data: MarketResult[];
-}
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
@@ -65,14 +57,12 @@ export default function SearchScreen() {
 
   const cheapestUrl = data?.cheapest?.url ?? null;
 
-  const sections: Section[] = (data?.by_supermarket ?? []).map(
-    (group: SupermarketGroup) => ({
-      supermarket: group.supermarket,
-      data: group.products,
-    }),
-  );
+  // Flatten all supermarket groups into one list sorted by price.
+  const flatProducts: MarketResult[] = (data?.by_supermarket ?? [])
+    .flatMap((g) => g.products)
+    .sort((a, b) => a.price - b.price);
 
-  const totalProducts = sections.reduce((sum, s) => sum + s.data.length, 0);
+  const supermarketCount = data?.by_supermarket?.length ?? 0;
 
   const renderItem = useCallback(
     ({ item }: { item: MarketResult }) => (
@@ -83,26 +73,6 @@ export default function SearchScreen() {
       />
     ),
     [cheapestUrl, addItem],
-  );
-
-  const renderSectionHeader = useCallback(
-    ({ section }: { section: Section }) => (
-      <View style={styles.sectionHeader}>
-        <View
-          style={[
-            styles.sectionDot,
-            {
-              backgroundColor:
-                SUPERMARKET_COLORS[section.supermarket] ?? colors.primary,
-            },
-          ]}
-        />
-        <Text style={styles.sectionTitle}>
-          {supermarketLabel(section.supermarket)}
-        </Text>
-      </View>
-    ),
-    [],
   );
 
   const keyExtractor = useCallback(
@@ -138,20 +108,18 @@ export default function SearchScreen() {
         />
 
         {/* Results */}
-        <SectionList
-          sections={sections}
+        <FlatList
+          data={flatProducts}
           renderItem={renderItem}
-          renderSectionHeader={renderSectionHeader}
           keyExtractor={keyExtractor}
           contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="handled"
-          stickySectionHeadersEnabled={false}
           ListHeaderComponent={
-            data && sections.length > 0 ? (
+            data && flatProducts.length > 0 ? (
               <ResultHeader
                 query={data.query}
-                supermarketCount={sections.length}
-                productCount={totalProducts}
+                supermarketCount={supermarketCount}
+                productCount={flatProducts.length}
                 fromCache={data.from_cache}
                 warnings={data.warnings}
               />
@@ -298,26 +266,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     flexGrow: 1,
     backgroundColor: colors.background,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 6,
-  },
-  sectionDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   resultHeader: {
     paddingHorizontal: 16,

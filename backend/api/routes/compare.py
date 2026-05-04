@@ -1,9 +1,12 @@
+import logging
 import re
 import unicodedata
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 from api.schemas.compare import CompareResponse, MarketResult, SupermarketGroup
 from core.nutriscore_cache import get_nutriscore
@@ -127,8 +130,17 @@ async def compare_products(
             grade, nova = await get_nutriscore(result.product_name)
             result.nutriscore = grade
             result.nova_group = nova
-    except Exception:  # noqa: BLE001
-        pass  # nutriscore is optional; return results without it
+        if candidates:
+            first = candidates[0]
+            logger.info(
+                "nutriscore sample — %r: nutriscore=%s nova=%s",
+                first.product_name,
+                first.nutriscore,
+                first.nova_group,
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("nutriscore enrichment failed: %s", exc)
+        # nutriscore is optional; continue without it
 
     # Flag best nutriscore within each supermarket group.
     _GRADE_ORDER = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4}
