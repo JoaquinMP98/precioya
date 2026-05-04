@@ -45,3 +45,16 @@ class SearchCache(Base):
     cached_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     product: Mapped["Product"] = relationship(back_populates="search_caches")
+
+
+class NutriscoreCache(Base):
+    """Caches Open Food Facts Nutri-Score lookups to avoid repeated API calls."""
+
+    __tablename__ = "nutriscore_cache"
+    __table_args__ = (UniqueConstraint("product_name_key", name="uq_nutriscore_name"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    product_name_key: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    nutriscore: Mapped[str | None] = mapped_column(String, nullable=True)
+    nova_group: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cached_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)

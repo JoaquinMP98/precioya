@@ -20,9 +20,26 @@ function bestUnitLabel(pricePerUnit: string | null): string | null {
   return m ? `Mejor €/${m[1]}` : null;
 }
 
+const NUTRISCORE_COLORS: Record<string, string> = {
+  a: '#1a9e4c',
+  b: '#85bb2f',
+  c: '#f5c400',
+  d: '#ef8714',
+  e: '#e63e11',
+};
+
 function SupermarketDot({ slug }: { slug: string }) {
   const dotColor = SUPERMARKET_COLORS[slug] ?? colors.primary;
   return <View style={[styles.dot, { backgroundColor: dotColor }]} />;
+}
+
+function NutriscoreBadge({ grade }: { grade: string }) {
+  const bg = NUTRISCORE_COLORS[grade.toLowerCase()] ?? '#aaa';
+  return (
+    <View style={[styles.nutriscoreBadge, { backgroundColor: bg }]}>
+      <Text style={styles.nutriscoreText}>{grade.toUpperCase()}</Text>
+    </View>
+  );
 }
 
 function ProductImage({ uri }: { uri: string | null }) {
@@ -51,18 +68,25 @@ export function PriceCard({ result, isCheapest, onAdd }: Props) {
 
   return (
     <View style={[styles.card, isCheapest && styles.cheapestCard]}>
-      {isCheapest && (
-        <View style={styles.cheapestBadge}>
-          <Ionicons name="trophy" size={11} color={colors.cheapest} />
-          <Text style={styles.cheapestBadgeText}>Más barato</Text>
-        </View>
-      )}
-      {unitLabel != null && (
-        <View style={styles.bestUnitBadge}>
-          <Ionicons name="trending-down" size={11} color={colors.primary} />
-          <Text style={styles.bestUnitBadgeText}>{unitLabel}</Text>
-        </View>
-      )}
+      <View style={styles.badgeRow}>
+        {isCheapest && (
+          <View style={styles.cheapestBadge}>
+            <Ionicons name="trophy" size={11} color={colors.cheapest} />
+            <Text style={styles.cheapestBadgeText}>Más barato</Text>
+          </View>
+        )}
+        {unitLabel != null && (
+          <View style={styles.bestUnitBadge}>
+            <Ionicons name="trending-down" size={11} color={colors.primary} />
+            <Text style={styles.bestUnitBadgeText}>{unitLabel}</Text>
+          </View>
+        )}
+        {result.best_nutriscore && (
+          <View style={styles.bestNutriBadge}>
+            <Text style={styles.bestNutriText}>Mejor nutrición</Text>
+          </View>
+        )}
+      </View>
 
       <View style={styles.row}>
         <ProductImage uri={result.image_url} />
@@ -74,9 +98,14 @@ export function PriceCard({ result, isCheapest, onAdd }: Props) {
               {supermarketLabel(result.supermarket)}
             </Text>
           </View>
-          <Text style={styles.name} numberOfLines={2}>
-            {result.product_name}
-          </Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name} numberOfLines={2}>
+              {result.product_name}
+            </Text>
+            {result.nutriscore && (
+              <NutriscoreBadge grade={result.nutriscore} />
+            )}
+          </View>
           {result.price_per_unit != null && (
             <Text style={styles.pricePerUnit}>{result.price_per_unit}</Text>
           )}
@@ -116,11 +145,16 @@ const styles = StyleSheet.create({
     borderColor: colors.cheapest,
     backgroundColor: colors.cheapestBg,
   },
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 8,
+  },
   cheapestBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginBottom: 8,
   },
   cheapestBadgeText: {
     fontSize: 11,
@@ -128,6 +162,21 @@ const styles = StyleSheet.create({
     color: colors.cheapest,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  bestNutriBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#7C3AED',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  bestNutriText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   row: {
     flexDirection: 'row',
@@ -154,6 +203,25 @@ const styles = StyleSheet.create({
   },
   middle: {
     flex: 1,
+    gap: 2,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  nutriscoreBadge: {
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
+    marginTop: 1,
+  },
+  nutriscoreText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#fff',
   },
   supermarketRow: {
     flexDirection: 'row',
@@ -204,7 +272,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginBottom: 8,
   },
   bestUnitBadgeText: {
     fontSize: 11,

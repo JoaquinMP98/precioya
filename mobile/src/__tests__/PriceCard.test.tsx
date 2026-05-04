@@ -10,6 +10,10 @@ const baseResult: MarketResult = {
   price_per_unit: '0,65 €/L',
   url: 'https://tienda.mercadona.es/product/7543',
   image_url: null,
+  best_unit_price: false,
+  nutriscore: null,
+  nova_group: null,
+  best_nutriscore: false,
 };
 
 describe('PriceCard', () => {

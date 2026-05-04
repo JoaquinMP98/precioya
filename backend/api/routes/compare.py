@@ -1,3 +1,4 @@
+import asyncio
 import re
 import unicodedata
 from typing import Annotated
@@ -6,6 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.schemas.compare import CompareResponse, MarketResult, SupermarketGroup
+from core.nutriscore_cache import get_nutriscore
 from core.search_service import search_with_cache
 from db.database import get_db
 
@@ -118,6 +120,30 @@ async def compare_products(
                 best[unit] = (value, result)
         for _, winner in best.values():
             winner.best_unit_price = True
+
+    # Enrich all products with Nutri-Score (concurrent, DB-cached).
+    all_results = [r for g in by_supermarket for r in g.products]
+    nutri_data = await asyncio.gather(
+        *[get_nutriscore(db, r.product_name) for r in all_results]
+    )
+    for result, (grade, nova) in zip(all_results, nutri_data):
+        result.nutriscore = grade
+        result.nova_group = nova
+
+    # Flag best nutriscore within each supermarket group.
+    _GRADE_ORDER = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4}
+    for group in by_supermarket:
+        best_grade: str | None = None
+        best_result: MarketResult | None = None
+        for result in group.products:
+            if result.nutriscore and (
+                best_grade is None
+                or _GRADE_ORDER[result.nutriscore] < _GRADE_ORDER[best_grade]
+            ):
+                best_grade = result.nutriscore
+                best_result = result
+        if best_result:
+            best_result.best_nutriscore = True
 
     # Cheapest is the absolute minimum price across all relevant products.
     cheapest = (

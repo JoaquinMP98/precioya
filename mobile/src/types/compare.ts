@@ -6,6 +6,9 @@ export interface MarketResult {
   url: string;
   image_url: string | null;
   best_unit_price: boolean;
+  nutriscore: string | null;
+  nova_group: number | null;
+  best_nutriscore: boolean;
 }
 
 export interface SupermarketGroup {

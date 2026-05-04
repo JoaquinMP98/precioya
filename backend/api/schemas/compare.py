@@ -9,6 +9,9 @@ class MarketResult(BaseModel):
     url: str
     image_url: str | None = None
     best_unit_price: bool = False
+    nutriscore: str | None = None
+    nova_group: int | None = None
+    best_nutriscore: bool = False
 
 
 class SupermarketGroup(BaseModel):
