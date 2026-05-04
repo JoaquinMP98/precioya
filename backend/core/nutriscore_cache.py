@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 _TTL = timedelta(days=30)
 # Serial requests: 1 at a time to avoid 503s from Open Food Facts.
 _SEMAPHORE = asyncio.Semaphore(1)
-_DELAY_S = 0.5
+_DELAY_S = 2.0
 
 
 def _name_key(product_name: str) -> str:

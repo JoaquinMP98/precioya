@@ -8,6 +8,8 @@ _BARCODE_URL = "https://world.openfoodfacts.org/api/v2/product/{barcode}"
 _SEARCH_URL = "https://world.openfoodfacts.org/cgi/search.pl"
 _FIELDS = "product_name,nutrition_grades,nova_groups,brands"
 _TIMEOUT = 8.0
+_USER_AGENT = "PrecioYa/1.0 (https://github.com/JoaquinMP98/precioya - joaquinmartinezpaz@gmail.com)"
+_HEADERS = {"User-Agent": _USER_AGENT}
 
 _VALID_GRADES = {"a", "b", "c", "d", "e"}
 
@@ -27,12 +29,28 @@ def _nova(raw) -> int | None:
         return None
 
 
+async def _get(client: httpx.AsyncClient, url: str, **kwargs) -> httpx.Response | None:
+    """GET with one exponential-backoff retry on 503."""
+    resp = await client.get(url, **kwargs)
+    if resp.status_code == 503:
+        logger.warning("OFF rate-limited (503) — retrying in 3 s")
+        import asyncio  # local import to keep top-level clean
+        await asyncio.sleep(3)
+        resp = await client.get(url, **kwargs)
+        if resp.status_code == 503:
+            logger.warning("OFF still 503 after retry — skipping")
+            return None
+    return resp
+
+
 async def get_nutriscore_by_barcode(barcode: str) -> tuple[str | None, int | None]:
     """Return (nutrition_grade, nova_group) for a barcode, or (None, None)."""
     url = _BARCODE_URL.format(barcode=barcode)
     try:
-        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-            resp = await client.get(url, params={"fields": _FIELDS})
+        async with httpx.AsyncClient(timeout=_TIMEOUT, headers=_HEADERS) as client:
+            resp = await _get(client, url, params={"fields": _FIELDS})
+            if resp is None:
+                return None, None
             resp.raise_for_status()
             data = resp.json()
         product = data.get("product") or {}
@@ -59,10 +77,9 @@ async def get_nutriscore_by_name(
         "lc": "es",
     }
     try:
-        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-            resp = await client.get(_SEARCH_URL, params=params)
-            if resp.status_code == 503:
-                logger.warning("OFF rate-limited (503) for %r — skipping nutriscore", name)
+        async with httpx.AsyncClient(timeout=_TIMEOUT, headers=_HEADERS) as client:
+            resp = await _get(client, _SEARCH_URL, params=params)
+            if resp is None:
                 return None, None
             resp.raise_for_status()
             data = resp.json()

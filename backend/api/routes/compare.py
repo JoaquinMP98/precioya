@@ -120,10 +120,10 @@ async def compare_products(
         for _, winner in best.values():
             winner.best_unit_price = True
 
-    # Enrich products with Nutri-Score (serialised; gracefully skipped on failure).
+    # Enrich top-5 products per group with Nutri-Score (serialised; optional).
     try:
-        all_results = [r for g in by_supermarket for r in g.products]
-        for result in all_results:
+        candidates = [r for g in by_supermarket for r in g.products[:5]]
+        for result in candidates:
             grade, nova = await get_nutriscore(result.product_name)
             result.nutriscore = grade
             result.nova_group = nova
