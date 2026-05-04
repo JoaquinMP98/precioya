@@ -1,4 +1,3 @@
-import asyncio
 import re
 import unicodedata
 from typing import Annotated
@@ -121,14 +120,15 @@ async def compare_products(
         for _, winner in best.values():
             winner.best_unit_price = True
 
-    # Enrich all products with Nutri-Score (concurrent, DB-cached).
-    all_results = [r for g in by_supermarket for r in g.products]
-    nutri_data = await asyncio.gather(
-        *[get_nutriscore(db, r.product_name) for r in all_results]
-    )
-    for result, (grade, nova) in zip(all_results, nutri_data):
-        result.nutriscore = grade
-        result.nova_group = nova
+    # Enrich products with Nutri-Score (serialised; gracefully skipped on failure).
+    try:
+        all_results = [r for g in by_supermarket for r in g.products]
+        for result in all_results:
+            grade, nova = await get_nutriscore(result.product_name)
+            result.nutriscore = grade
+            result.nova_group = nova
+    except Exception:  # noqa: BLE001
+        pass  # nutriscore is optional; return results without it
 
     # Flag best nutriscore within each supermarket group.
     _GRADE_ORDER = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4}

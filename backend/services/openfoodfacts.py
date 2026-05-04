@@ -61,6 +61,9 @@ async def get_nutriscore_by_name(
     try:
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
             resp = await client.get(_SEARCH_URL, params=params)
+            if resp.status_code == 503:
+                logger.warning("OFF rate-limited (503) for %r — skipping nutriscore", name)
+                return None, None
             resp.raise_for_status()
             data = resp.json()
         hits = data.get("products") or []
